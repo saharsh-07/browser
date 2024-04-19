@@ -36,6 +36,10 @@ class Browser:
   def draw(self):
     self.canvas.delete("all") # repainting every time
     for x, y, c in self.display_list:
+      # optimizations for achieving 16ms (ideal animation frame budget) (1/60 second time for drawing)
+      if y  > self.scroll + HEIGHT: continue  # skip render of text below (window)view
+      if y + VSTEP < self.scroll : continue   # skip render of text above view
+      
       self.canvas.create_text(x, y - self.scroll, text=c)
 
   def load(self, url):
