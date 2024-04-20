@@ -1,5 +1,15 @@
 import socket
 import ssl
+from dataclasses import dataclass
+
+
+@dataclass  # utiliy classes using dataclass decorator
+class Text:
+  text: str   # typing comes preloaded with dataclasses
+
+@dataclass
+class Tag:
+  tag:any
 
 class URL:
   def __init__(self, url):
@@ -68,16 +78,26 @@ class URL:
 
 # text processing 
 def lex(body):
-  text = ""
-  in_tag = False
+  out = []
+  buffer = "" # either content text or tag
+  in_tag = False  # start of either tag or text
   for c in body:
     if c == "<":
       in_tag = True
+      if buffer:
+        out.append(Text(buffer))
+        buffer = ""
     elif c == ">":
       in_tag = False
-    elif not in_tag:
-      text += c
-  return text
+      out.append(Tag(buffer))
+      buffer = ""
+    else:
+      buffer += c
+
+  if not in_tag and buffer: # unfinished buffer (without complete tags)
+    out.append(Text(buffer))
+
+  return out
 
 # loading of content from web 
 def load(url):
