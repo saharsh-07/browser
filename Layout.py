@@ -6,14 +6,26 @@ from Browser import Tag, Text
 # page coordination layouting
 class Layout:
   def __init__(self, tokens):
+    self.tokens = tokens
     self.display_list = []
     self.cursor_x = HSTEP
     self.cursor_y = VSTEP
     self.weight = "normal"
     self.style = "roman"
     self.size = 16
+    self.line = []
     for tok in tokens:
         self.token(tok)
+    self.flush()
+  
+  def get_font(self, size, weight, slant):
+    key = (size, weight, slant)
+    if key not in FONTS:
+        font = tkinter.font.Font(size=size, weight=weight,
+            slant=slant)
+        label = tkinter.Label(font=font)
+        FONTS[key] = (font, label)
+    return FONTS[key][0]
     
   def token(self, tok):
     # font = tkinter.font.Font() 
@@ -36,17 +48,30 @@ class Layout:
       self.size += 4
     elif tok.tag == "/big":
       self.size -= 4
+    elif tok.tag == "br":
+        self.flush()
+    elif tok.tag == "/p":
+        self.flush()
+        self.cursor_y += VSTEP
     return self.display_list
 
   def word(self, word):
-    font = tkinter.font.Font(
-              size=self.size,
-              weight=self.weight,
-              slant=self.style,
-          )
+    font = self.get_font(self.size, self.weight, self.style)
     w = font.measure(word)
-    self.display_list.append((self.cursor_x, self.cursor_y, word, font)) # horizontal, vertical delta, characters in text
+    if self.cursor_x + w > WIDTH - HSTEP:
+      self.flush()
+    self.line.append((self.cursor_x, word, font))
     self.cursor_x += w + font.measure(" ") # keep displaying with diff of horiz delta
-    if self.cursor_x + w >= WIDTH - HSTEP: # if end of line (line-wrap)
-      self.cursor_y += font.metrics("linespace") * 1.25
-      self.cursor_x = HSTEP  # start of row (horizontal)
+    
+  def flush(self):
+    if not self.line: return
+    metrics = [font.metrics() for x, word, font in self.line]
+    max_ascent = max([metric["ascent"] for metric in metrics])
+    baseline = self.cursor_y + 1.25 * max_ascent
+    for x, word, font in self.line:
+      y = baseline - font.metrics("ascent")
+      self.display_list.append((x, y, word, font))
+    max_descent = max([metric["descent"] for metric in metrics])
+    self.cursor_y = baseline + 1.25 * max_descent
+    self.cursor_x = HSTEP
+    self.line = []
