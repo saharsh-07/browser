@@ -1,28 +1,25 @@
 import tkinter
 import tkinter.font
 from URL import *
+from HTMLParser import *
 from Layout import *
 from GLOBALS import *
 
 class Browser:
   def __init__(self):
-    self.scroll = 0 # how much scrolled
     self.window = tkinter.Tk()
     self.canvas = tkinter.Canvas(self.window, height=HEIGHT, width=WIDTH)
     self.canvas.pack()  # keeps canvas under window
-    self.window.bind("<Down>", self.scroll_down)  # event of down keypress (for scrolling)
-    BI_TIMES = tkinter.font.Font(
-        family="Times",
-        size=16,
-        weight="bold",
-        slant="italic",
-    )
-  
-  # helper function for scrolling
-  def scroll_down(self, e):
-    self.scroll += SCROLL_STEP
-    self.draw()
 
+    self.scroll = 0 # how much scrolled
+    self.window.bind("<Down>", self.scroll_down)  # event of down keypress (for scrolling)
+    self.display_list = []
+  
+  def load(self, url):
+    body = url.request()
+    self.nodes = HTMLParser(body).parse()
+    self.display_list = Layout(self.nodes).display_list
+    self.draw()
 
   # function for displaying
   def draw(self):
@@ -34,11 +31,11 @@ class Browser:
       
       self.canvas.create_text(x, y - self.scroll, text=word, font=font, anchor="nw")
 
-  def load(self, url):
-    body = url.request()
-    tokens = lex(body)
-    self.display_list = Layout(tokens).display_list
+  # helper function for scrolling
+  def scroll_down(self, e):
+    self.scroll += SCROLL_STEP
     self.draw()
+
         
 
 if __name__ == "__main__":
