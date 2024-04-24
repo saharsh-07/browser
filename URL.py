@@ -8,23 +8,27 @@ class URL:
     All below code does is URI resolution.
     parts URI into protocol(scheme), host, port, path, etc
     """
-    self.scheme, url = url.split("://", 1)
-    assert self.scheme in ["http", "https"]
-    
-    if "/" not in url:
-      url = url + "/"   # for handling path
-    
-    self.host, url = url.split("/", 1)
-    self.path = "/" + url
-    
-    if self.scheme == "http":
-      self.port = 80
-    elif self.scheme == "https":
-      self.port = 443
-    
-    if ":" in url:
-      self.host, self.port = self.host.split(":", 1)
-      self.port = int(port)
+    try:
+            self.scheme, url = url.split("://", 1)
+            assert self.scheme in ["http", "https"]
+
+            if "/" not in url:
+                url = url + "/"
+            self.host, url = url.split("/", 1)
+            self.path = "/" + url
+
+            if self.scheme == "http":
+                self.port = 80
+            elif self.scheme == "https":
+                self.port = 443
+
+            if ":" in self.host:
+                self.host, port = self.host.split(":", 1)
+                self.port = int(port)
+    except:
+            print("Malformed URL found, falling back to the WBE home page.")
+            print("  URL was: " + url)
+            self.__init__("https://browser.engineering")
 
   # get web content from internet 
   def request(self):
@@ -66,14 +70,29 @@ class URL:
     s.close()
 
     return content
-
+  
+  def resolve(self, url):
+        if "://" in url: return URL(url)
+        if not url.startswith("/"):
+            dir, _ = self.path.rsplit("/", 1)
+            while url.startswith("../"):
+                _, url = url.split("/", 1)
+                if "/" in dir:
+                    dir, _ = dir.rsplit("/", 1)
+            url = dir + "/" + url
+        if url.startswith("//"):
+            return URL(self.scheme + ":" + url)
+        else:
+            return URL(self.scheme + "://" + self.host + \
+                       ":" + str(self.port) + url)
+                       
 # loading of content from web 
 def load(url):
   body = URL(sys.argv[1]).request()
   nodes = HTMLParser(body).parse()
   print_tree(nodes)
   
-  
+
 if __name__ == "__main__":
   import sys
   load(URL(sys.argv[1]))

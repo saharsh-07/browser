@@ -1,4 +1,4 @@
-from GLOBALS import SELF_CLOSING_TAGS, HEAD_TAGS
+from GLOBALS import *
 
 class Text:
   def __init__(self, text, parent):
@@ -25,8 +25,7 @@ class Element:
     return "<" + self.tag + attr_str + ">"
 
 
-class HTMLParser:
-  
+class HTMLParser:  
   def __init__(self, body):
     self.body = body
     self.unfinished = []
@@ -70,7 +69,7 @@ class HTMLParser:
     parent = self.unfinished[-1]
     node = Text(text, parent)
     parent.children.append(node)
-  
+
   def add_tag(self, tag):
     tag, attributes = self.get_attributes(tag)
     if tag.startswith("!"): return
@@ -81,6 +80,7 @@ class HTMLParser:
       node = self.unfinished.pop()
       parent = self.unfinished[-1]
       parent.children.append(node)
+    
     elif tag in SELF_CLOSING_TAGS:
       parent = self.unfinished[-1]
       node = Element(tag, attributes, parent)

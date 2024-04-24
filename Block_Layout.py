@@ -45,43 +45,44 @@ class Block_Layout:
       self.cursor_y += VSTEP
 
   # word formatting
-  def word(self, word):
+  def word(self, node, word):
+    weight = node.style["font-weight"]
+    style = node.style["font-style"]
+    if style == "normal": style = "roman"
+    size = int(float(node.style["font-size"][:-2]) * .75)
     font = get_font(self.size, self.weight, self.style)
     w = font.measure(word)
     
     if self.cursor_x + w > self.width:  # out of view 
       self.flush()
-      
-    self.line.append((self.cursor_x, word, font)) #making to be rendered whole line
+    color = node.style["color"]
+    self.line.append((self.cursor_x, word, font, color)) #making to be rendered whole line
     self.cursor_x += w + font.measure(" ") # keep displaying with diff of horiz delta
 
   # processing buffer of tree nodes
   def flush(self):
     if not self.line: return
-    
-    metrics = [font.metrics() for x, word, font in self.line]
+    metrics = [font.metrics() for x, word, font, color in self.line]
     max_ascent = max([metric["ascent"] for metric in metrics])
     baseline = self.cursor_y + 1.25 * max_ascent
-    
-    for rel_x, word, font in self.line:
-      x = self.x + rel_x
-      y = self.y + baseline - font.metrics("ascent")
-      self.display_list.append((x, y, word, font))
-    
-    self.cursor_x = 0
+    for x, word, font, color in self.line:
+        y = baseline - font.metrics("ascent")
+        self.display_list.append((x, y, word, font, color))
+    self.cursor_x = self.x
     self.line = []
     max_descent = max([metric["descent"] for metric in metrics])
     self.cursor_y = baseline + 1.25 * max_descent
 
-  def recurse(self, tree):
-    if isinstance(tree, Text):  # if simple text or content simply make words
-      for word in tree.text.split():
-        self.word(word)
-    else: # placing tags for html tags
-      self.open_tag(tree.tag)
-      for child in tree.children:
-        self.recurse(child)
-      self.close_tag(tree.tag)
+
+  def recurse(self, node):
+        if isinstance(node, Text):
+            for word in node.text.split():
+                self.word(node, word)
+        else:
+            if node.tag == "br":
+                self.flush()
+            for child in node.children:
+                self.recurse(child)
 
   def open_tag(self, tag):
     if tag == "i":
@@ -162,15 +163,14 @@ class Block_Layout:
   # draw either rectangle or text into document
   def paint(self):
     cmds = []
-    
-    if isinstance(self.node, Element) and self.node.tag == "pre":
-      x2, y2 = self.x + self.width, self.y + self.height
-      rect = Draw_Rect(self.x, self.y, x2, y2, "gray")
-      cmds.append(rect)
-    
-    if self.layout_mode() == "inline":
-      for x, y, word, font in self.display_list:
-        cmds.append(Draw_Text(x, y, word, font))
-    
+    bgcolor = self.node.style.get("background-color",
+                                  "transparent")
+    if bgcolor != "transparent":
+        x2, y2 = self.x + self.width, self.y + self.height
+        rect = Draw_Rect(self.x, self.y, x2, y2, bgcolor)
+        cmds.append(rect)
+    for x, y, word, font, color in self.display_list:
+        cmds.append(Draw_Text(self.x + x, self.y + y,
+                                      word, font, color))
     return cmds
   
