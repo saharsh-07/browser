@@ -2,6 +2,11 @@ from GLOBALS import *
 from Draw_Rect import *
 from Draw_Text import *
 from HTMLParser import *
+from Line_Layout import *
+from Text_Layout import *
+from Draw_Line import *
+from Draw_Rect import *
+from Rect import *
 
 class Block_Layout:
   # Block will need below parameters for tree building
@@ -50,13 +55,15 @@ class Block_Layout:
     style = node.style["font-style"]
     if style == "normal": style = "roman"
     size = int(float(node.style["font-size"][:-2]) * .75)
-    font = get_font(self.size, self.weight, self.style)
+    font = get_font(size, weight, style)
     w = font.measure(word)
     
     if self.cursor_x + w > self.width:  # out of view 
-      self.flush()
-    color = node.style["color"]
-    self.line.append((self.cursor_x, word, font, color)) #making to be rendered whole line
+      self.new_line()
+    line = self.children[-1]
+    previous_word = line.children[-1] if line.children else None
+    text = Text_Layout(node, word, line, previous_word)
+    line.children.append(text)
     self.cursor_x += w + font.measure(" ") # keep displaying with diff of horiz delta
 
   # processing buffer of tree nodes
@@ -80,10 +87,15 @@ class Block_Layout:
                 self.word(node, word)
         else:
             if node.tag == "br":
-                self.flush()
+                self.new_line()
             for child in node.children:
                 self.recurse(child)
-
+  def new_line(self):
+    self.cursor_x = 0
+    last_line = self.children[-1] if self.children else None
+    new_line = Line_Layout(self.node, self, last_line)
+    self.children.append(new_line)
+    
   def open_tag(self, tag):
     if tag == "i":
       self.style = "italic"
@@ -130,24 +142,14 @@ class Block_Layout:
         previous = next
     
     else:
-      self.cursor_x = 0
-      self.cursor_y = 0
-      self.weight = "normal"
-      self.style = "roman"
-      self.size = 16
-      self.line = []
+      self.new_line()
       self.recurse(self.node)
-      self.flush()
     
     for child in self.children:
       child.layout()
-    
-    if mode == "block":
-      self.height = sum([child.height for child in self.children])
-    else:
-      self.height = self.cursor_y
 
-  # which mode of layout it is -> inline or block
+    self.height = sum([child.height for child in self.children])
+  
   def layout_mode(self):
     if isinstance(self.node, Text):
       return "inline"
@@ -166,11 +168,12 @@ class Block_Layout:
     bgcolor = self.node.style.get("background-color",
                                   "transparent")
     if bgcolor != "transparent":
-        x2, y2 = self.x + self.width, self.y + self.height
-        rect = Draw_Rect(self.x, self.y, x2, y2, bgcolor)
+        rect = Draw_Rect(self.self_rect(), bgcolor)
         cmds.append(rect)
-    for x, y, word, font, color in self.display_list:
-        cmds.append(Draw_Text(self.x + x, self.y + y,
-                                      word, font, color))
+    return cmds
+
     return cmds
   
+  def self_rect(self):
+        return Rect(self.x, self.y,
+            self.x + self.width, self.y + self.height)
