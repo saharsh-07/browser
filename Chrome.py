@@ -56,6 +56,9 @@ class Chrome:
             tabs_start + tab_width * i, self.tabbar_top,
             tabs_start + tab_width * (i + 1), self.tabbar_bottom)
   
+  def blur(self):
+        self.focus = None
+
   def paint(self):
         cmds = []
         cmds.append(Draw_Rect(
@@ -137,7 +140,9 @@ class Chrome:
   def keypress(self, char):
         if self.focus == "address bar":
             self.address_bar += char
-  
+            return True
+        return False
+        
   def enter(self):
         if self.focus == "address bar":
             self.browser.active_tab.load(URL(self.address_bar))

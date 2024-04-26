@@ -3,6 +3,7 @@ from Draw_Rect import *
 from Draw_Text import *
 from HTMLParser import *
 from Line_Layout import *
+from Input_Layout import *
 from Text_Layout import *
 from Draw_Line import *
 from Draw_Rect import *
@@ -88,7 +89,10 @@ class Block_Layout:
         else:
             if node.tag == "br":
                 self.new_line()
-            for child in node.children:
+            elif node.tag == "input" or node.tag == "button":
+              self.input(node)
+            else:
+              for child in node.children:
                 self.recurse(child)
   def new_line(self):
     self.cursor_x = 0
@@ -157,23 +161,43 @@ class Block_Layout:
       child.tag in BLOCK_ELEMENTS
       for child in self.node.children]):
       return "block"
-    elif self.node.children:
+    elif self.node.children or self.node.tag == "input":
       return "inline"
     else:
       return "block"
   
+  def should_paint(self):
+        return isinstance(self.node, Text) or \
+            (self.node.tag != "input" and self.node.tag !=  "button")
+
+
   # draw either rectangle or text into document
   def paint(self):
-    cmds = []
-    bgcolor = self.node.style.get("background-color",
-                                  "transparent")
-    if bgcolor != "transparent":
-        rect = Draw_Rect(self.self_rect(), bgcolor)
-        cmds.append(rect)
-    return cmds
-
-    return cmds
+        cmds = []
+        bgcolor = self.node.style.get("background-color",
+                                      "transparent")
+        if bgcolor != "transparent":
+            draw_rect = Draw_Rect(self.self_rect(), bgcolor)
+            cmds.append(draw_rect)
+        return cmds
   
+  def input(self, node):
+        w = INPUT_WIDTH_PX
+        if self.cursor_x + w > self.width:
+            self.new_line()
+        line = self.children[-1]
+        previous_word = line.children[-1] if line.children else None
+        input = Input_Layout(node, line, previous_word)
+        line.children.append(input)
+
+        weight = node.style["font-weight"]
+        style = node.style["font-style"]
+        if style == "normal": style = "roman"
+        size = int(float(node.style["font-size"][:-2]) * .75)
+        font = get_font(size, weight, style)
+
+        self.cursor_x += w + font.measure(" ")
+
   def self_rect(self):
         return Rect(self.x, self.y,
             self.x + self.width, self.y + self.height)

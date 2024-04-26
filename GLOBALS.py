@@ -2,7 +2,7 @@ import tkinter
 from CSSParser import *
 global HEIGHT, WIDTH, HSTEP, VSTEP, SCROLL_STEP, BI_TIMES, FONTS, DEFAULT_STYLE_SHEET
 global SELF_CLOSING_TAGS, HEAD_TAGS, BLOCK_ELEMENTS, get_font, paint_tree, print_tree
-global tree_to_list, cascade_priority, INHERITED_PROPERTIES, style
+global tree_to_list, cascade_priority, INHERITED_PROPERTIES, style, INPUT_WIDTH_PX
 
 
 FONTS = {}
@@ -40,7 +40,6 @@ def get_font(size, weight, slant):
         font = tkinter.font.Font(size=size, weight=weight,
         slant=slant)
         label = tkinter.Label(font=font)
-        
         FONTS[key] = (font, label)
     return FONTS[key][0]
 
@@ -96,3 +95,4 @@ def cascade_priority(rule):
     selector, body = rule
     return selector.priority
 
+INPUT_WIDTH_PX = 200

@@ -6,6 +6,7 @@ class Text:
     self.text = text
     self.children = []
     self.parent = parent
+    self.is_focused = False
   
   def __repr__(self): # nice string representation
     return repr(self.text)
@@ -16,6 +17,7 @@ class Element:
     self.attributes = attributes
     self.children = []
     self.parent = parent
+    self.is_focused = False
 
   def __repr__(self):
     attrs = [" " + k + "=\"" + v + "\"" for k, v  in self.attributes.items()]

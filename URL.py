@@ -31,7 +31,7 @@ class URL:
             self.__init__("https://browser.engineering")
 
   # get web content from internet 
-  def request(self):
+  def request(self, payload=None):
     # AF - address family(various communication ways eg. internet , bluetooth, etc)
     # type - type of communication protocol (like stream, datagram , raw, etc)
     # protocol like TCP, UDP, etc.
@@ -43,11 +43,15 @@ class URL:
     if self.scheme == "https":  # creation of https connection is diff than http
       ctx = ssl.create_default_context()  # secure socket
       s = ctx.wrap_socket(s, server_hostname=self.host)
-
-    req = "GET {} HTTP/1.0\r\n".format(self.path)
+    method = "POST" if payload else "GET"
+    req = "{} {} HTTP/1.0\r\n".format(method, self.path)
+    if payload:
+            length = len(payload.encode("utf8"))
+            req += "Content-Length: {}\r\n".format(length)
+    
     req += "Host: {}\r\n".format(self.host)
     req += "\r\n"
-    
+    if payload: req += payload
     s.send(req.encode("utf-8"))
     res = s.makefile("r", encoding="utf-8", newline="\r\n")
     status_line = res.readline()
@@ -95,8 +99,8 @@ class URL:
                        
 # loading of content from web 
 def load(url):
-  body = URL(sys.argv[1]).request()
   nodes = HTMLParser(body).parse()
+  body = URL(sys.argv[1]).request()
   print_tree(nodes)
   
 
