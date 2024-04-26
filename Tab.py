@@ -8,28 +8,17 @@ from CSSParser import *
         
 class Tab:
   def __init__(self, tab_height):
-    self.window = tkinter.Tk()
-    self.canvas = tkinter.Canvas(
-        self.window,
-        width=WIDTH,
-        height=HEIGHT,
-        bg="white",
-    )
-    self.canvas.pack()
-
-    self.scroll = 0
-    self.window.bind("<Down>", self.scroll_down)
-    self.window.bind("<Button-1>", self.click)
-    self.display_list = []
     self.url = None
-    self.tab_height = tab_height
     self.history = []
+    self.tab_height = tab_height
 
   def load(self, url):
+    body = url.request()
+    self.scroll = 0
     self.history.append(url)
     self.url = url
-    body = url.request()
     self.nodes = HTMLParser(body).parse()
+
     rules = DEFAULT_STYLE_SHEET.copy()
     links = [node.attributes["href"]
              for node in tree_to_list(self.nodes, [])
@@ -38,7 +27,6 @@ class Tab:
              and node.attributes.get("rel") == "stylesheet"
              and "href" in node.attributes]
     for link in links:
-            style_url = url.resolve(link)
             try:
                 body = style_url.request()
             except:
@@ -84,4 +72,5 @@ class Tab:
       elif elt.tag == "a" and "href" in elt.attributes:
         url = self.url.resolve(elt.attributes["href"])
         return self.load(url)
-    elt = elt.parent
+      elt = elt.parent
+    

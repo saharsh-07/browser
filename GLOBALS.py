@@ -40,6 +40,7 @@ def get_font(size, weight, slant):
         font = tkinter.font.Font(size=size, weight=weight,
         slant=slant)
         label = tkinter.Label(font=font)
+        
         FONTS[key] = (font, label)
     return FONTS[key][0]
 

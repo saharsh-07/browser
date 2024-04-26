@@ -22,9 +22,10 @@ class Browser:
       self.tabs = []
       self.active_tab = None
       self.chrome = Chrome(self)
-    
+      
+
     def handle_down(self, e):
-        self.active_tab.scrolldown()
+        self.active_tab.scroll_down()
         self.draw()
 
     def handle_click(self, e):

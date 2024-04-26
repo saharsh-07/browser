@@ -100,6 +100,4 @@ def load(url):
   print_tree(nodes)
   
 
-if __name__ == "__main__":
-  import sys
-  load(URL(sys.argv[1]))
+
