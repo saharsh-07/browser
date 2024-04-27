@@ -3,16 +3,18 @@ import dukpy
 EVENT_DISPATCH_JS = \
     "new Node(dukpy.handle).dispatchEvent(new Event(dukpy.type))"
 
-RUNTIME_JS = open("runtime9.js").read()
-
 class JSContext:
     def __init__(self, tab):
         self.tab = tab
         self.interp = dukpy.JSInterpreter()
-        self.interp.evaljs(RUNTIME_JS)
         self.interp.export_function("log", print)
         self.interp.export_function("querySelectorAll", self.querySelectorAll)
         self.interp.export_function("getAttribute", self.getAttribute)
+        self.interp.export_function("innerHTML_set", self.innerHTML_set)
+        self.interp.export_function("XMLHttpRequest_send",
+            self.XMLHttpRequest_send)
+        with open("runtime.js") as f:
+            self.interp.evaljs(f.read())
         self.node_to_handle = {}
         self.handle_to_node = {}
 
@@ -43,8 +45,6 @@ class JSContext:
     
     def dispatch_event(self, type, elt):
         handle = self.node_to_handle.get(elt, -1)
-        self.interp.evaljs(
-            EVENT_DISPATCH_JS, type=type, handle=handle)
         do_default = self.interp.evaljs(
             EVENT_DISPATCH_JS, type=type, handle=handle)
         return not do_default
@@ -57,3 +57,12 @@ class JSContext:
         for child in elt.children:
             child.parent = elt
         self.tab.render()
+    
+    def XMLHttpRequest_send(self, method, url, body):
+        full_url = self.tab.url.resolve(url)
+        if not self.tab.allowed_request(full_url):
+            raise Exception("Cross-origin XHR blocked by CSP")
+        headers, out = full_url.request(self.tab.url, body)
+        if full_url.origin() != self.tab.url.origin():
+            raise Exception("Cross-origin XHR request not allowed")
+        return out

@@ -1,5 +1,4 @@
 
-from GLOBALS import *
 
 class Text:
   def __init__(self, text, parent):
@@ -28,6 +27,7 @@ class Element:
     return "<" + self.tag + attr_str + ">"
 
 
+from GLOBALS import *
 class HTMLParser:  
   def __init__(self, body):
     self.body = body
@@ -74,6 +74,7 @@ class HTMLParser:
     parent.children.append(node)
 
   def add_tag(self, tag):
+    from GLOBALS import SELF_CLOSING_TAGS
     tag, attributes = self.get_attributes(tag)
     if tag.startswith("!"): return
     self.implicit_tags(tag)
@@ -83,7 +84,7 @@ class HTMLParser:
       node = self.unfinished.pop()
       parent = self.unfinished[-1]
       parent.children.append(node)
-    
+      
     elif tag in SELF_CLOSING_TAGS:
       parent = self.unfinished[-1]
       node = Element(tag, attributes, parent)
@@ -95,6 +96,7 @@ class HTMLParser:
   
   # finishing not complete tags 
   def implicit_tags(self, tag):
+    from GLOBALS import HEAD_TAGS
     while True:
       open_tags = [node.tag for node in self.unfinished]
       if open_tags == [] and tag != "html":

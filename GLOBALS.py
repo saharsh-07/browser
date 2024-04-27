@@ -3,7 +3,7 @@ from CSSParser import *
 global HEIGHT, WIDTH, HSTEP, VSTEP, SCROLL_STEP, BI_TIMES, FONTS, DEFAULT_STYLE_SHEET
 global SELF_CLOSING_TAGS, HEAD_TAGS, BLOCK_ELEMENTS, get_font, paint_tree, print_tree
 global tree_to_list, cascade_priority, INHERITED_PROPERTIES, style, INPUT_WIDTH_PX
-
+global COOKIE_JAR
 
 FONTS = {}
 HEIGHT, WIDTH = 600, 800  # height and width of window
@@ -96,3 +96,5 @@ def cascade_priority(rule):
     return selector.priority
 
 INPUT_WIDTH_PX = 200
+
+COOKIE_JAR = {}

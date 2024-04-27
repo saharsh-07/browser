@@ -1,6 +1,6 @@
 import socket
 import ssl
-
+from GLOBALS import *
 
 class URL:
   def __init__(self, url):
@@ -31,7 +31,7 @@ class URL:
             self.__init__("https://browser.engineering")
 
   # get web content from internet 
-  def request(self, payload=None):
+  def request(self, top_level_url, payload=None):
     # AF - address family(various communication ways eg. internet , bluetooth, etc)
     # type - type of communication protocol (like stream, datagram , raw, etc)
     # protocol like TCP, UDP, etc.
@@ -51,6 +51,14 @@ class URL:
     
     req += "Host: {}\r\n".format(self.host)
     req += "\r\n"
+    if self.host in COOKIE_JAR:
+            cookie, params = COOKIE_JAR[self.host]
+            allow_cookie = True
+            if referrer and params.get("samesite", "none") == "lax":
+                if method != "GET":
+                    allow_cookie = self.host == referrer.host
+            if allow_cookie:
+                req += "Cookie: {}\r\n".format(cookie)
     if payload: req += payload
     s.send(req.encode("utf-8"))
     res = s.makefile("r", encoding="utf-8", newline="\r\n")
@@ -73,8 +81,11 @@ class URL:
     content = res.read()
     s.close()
 
-    return content
+    return res_headers, content
   
+  def origin(self):
+        return self.scheme + "://" + self.host + ":" + str(self.port)
+
   def resolve(self, url):
         if "://" in url: return URL(url)
         if not url.startswith("/"):

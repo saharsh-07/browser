@@ -38,10 +38,23 @@ Object.defineProperty(Node.prototype, 'innerHTML', {
 
 Node.prototype.dispatchEvent = function(evt) {
     var type = evt.type;
-    var handle = this.handle;
+    var handle = this.handle
     var list = (LISTENERS[handle] && LISTENERS[handle][type]) || [];
     for (var i = 0; i < list.length; i++) {
         list[i].call(this, evt);
     }
     return evt.do_default;
+}
+
+function XMLHttpRequest() {}
+
+XMLHttpRequest.prototype.open = function(method, url, is_async) {
+    if (is_async) throw Error("Asynchronous XHR is not supported");
+    this.method = method;
+    this.url = url;
+}
+
+XMLHttpRequest.prototype.send = function(body) {
+    this.responseText = call_python("XMLHttpRequest_send",
+        this.method, this.url, body);
 }
