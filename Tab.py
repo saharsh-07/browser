@@ -5,7 +5,9 @@ from HTMLParser import *
 from Document_Layout import *
 from GLOBALS import *
 from CSSParser import *
+from JS_Context import *
 import urllib
+import dukpy
 
 class Tab:
   def __init__(self, tab_height):
@@ -20,6 +22,18 @@ class Tab:
         self.history.append(url)
         body = url.request(payload)
         self.nodes = HTMLParser(body).parse()
+        scripts = [node.attributes["src"] for node
+                   in tree_to_list(self.nodes, [])
+                   if isinstance(node, Element)
+                   and node.tag == "script"
+                   and "src" in node.attributes]
+        self.js = JS_Context(self)
+        for script in scripts:
+            body = url.resolve(script).request()
+            try:
+                self.js.run(body)
+            except dukpy.JSRuntimeError as e:
+                print("Script", script, "crashed", e)
 
         self.rules = DEFAULT_STYLE_SHEET.copy()
         links = [node.attributes["href"]
@@ -34,6 +48,7 @@ class Tab:
             except:
                 continue
             self.rules.extend(CSSParser(body).parse())
+
         self.render()
 
   # function for displaying
@@ -64,6 +79,7 @@ class Tab:
 
   def keypress(self, char):
         if self.focus:
+            if self.js.dispatch_event("keydown", self.focus): return
             self.focus.attributes["value"] += char
             self.render()
 
@@ -79,9 +95,11 @@ class Tab:
         if isinstance(elt, Text):
             pass
         elif elt.tag == "a" and "href" in elt.attributes:
+            if self.js.dispatch_event("click", elt): return
             url = self.url.resolve(elt.attributes["href"])
             return self.load(url)
         elif elt.tag == "input":
+            if self.js.dispatch_event("click", elt): return
             elt.attributes["value"] = ""
             if self.focus:
                 self.focus.is_focused = False
@@ -89,6 +107,7 @@ class Tab:
             elt.is_focused = True
             return self.render()
         elif elt.tag == "button":
+            if self.js.dispatch_event("click", elt): return 
             while elt:
                 if elt.tag == "form" and "action" in elt.attributes:
                     return self.submit_form(elt)
@@ -96,6 +115,7 @@ class Tab:
         elt = elt.parent
 
   def submit_form(self, elt):
+        if self.js.dispatch_event("submit", elt): return
         inputs = [node for node in tree_to_list(elt, [])
                   if isinstance(node, Element)
                   and node.tag == "input"
